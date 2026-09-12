@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yu-Gi-Oh - Samo najjeftinije + Uporedi - FINAL</title>
+<style>
+body{background:#0a0a0a;color:#eee;font-family:system-ui,sans-serif;margin:0;padding:16px}
+h1{color:#d4af37;margin:0 0 6px} .sub{color:#888;margin-bottom:14px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+input,select,button{background:#1a1a1a;border:1px solid #333;color:#eee;padding:8px 12px;border-radius:8px}
+button{cursor:pointer} .btn-gold{background:#d4af37;color:#000;font-weight:800;border:none}
+.btn-ghost{background:#222;border:1px solid #333}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{position:sticky;top:0;background:#111;padding:10px;border-bottom:2px solid #d4af37;text-align:left;cursor:pointer}
+td{padding:9px 10px;border-bottom:1px solid #1e1e1e}
+tr:hover{background:#151515}
+.badge{padding:2px 7px;border-radius:5px;font-size:11px;font-weight:700}
+.badge-DA{background:#0f3d0f;color:#7fdb7f} .badge-NE{background:#3d0f0f;color:#ff8a8a}
+.green{color:#7fdb7f;font-weight:800} .gold{color:#d4af37}
+.summary{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.card{background:#111;border:1px solid #222;border-radius:10px;padding:8px 14px}
+.card b{color:#d4af37}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:none;align-items:center;justify-content:center;z-index:99;padding:16px}
+.modal{background:#121212;border:1px solid #333;border-radius:16px;max-width:700px;width:100%;max-height:85vh;overflow:auto;padding:18px}
+.modal h2{margin:0 0 10px;color:#d4af37}
+.modal table{font-size:13px}
+.close{float:right;background:#222;border:1px solid #333;border-radius:8px;padding:6px 10px;cursor:pointer}
+.cheap-row{background:rgba(212,175,55,0.12)} .cheap-row td:first-child{border-left:3px solid #d4af37}
+</style>
+</head>
+<body>
+<h1>Yu-Gi-Oh - Samo najjeftinije - FINAL</h1>
+<div class="sub">Jedan red = jedan proizvod (najjeftinija cena u Srbiji) • Klik na "Uporedi" da vidiš sve prodavnice • 12+ izvora • Boosteri + Tinovi + Dekove</div>
+<div class="summary" id="summary"></div>
+<div class="controls">
+<input id="search" placeholder="Pretraži... npr Slifer">
+<select id="tip"><option value="">Svi tipovi</option></select>
+<select id="fiksno"><option value="">Fiksne? Sve</option><option value="DA">DA - fiksne</option><option value="NE">NE - random</option></select>
+<button class="btn-gold" onclick="exportCSV()">Export najjeftinije CSV</button>
+</div>
+<table id="tbl"><thead><tr>
+<th onclick="sortBy('naziv')">Naziv ⭐</th><th>Tip</th><th onclick="sortBy('karte')">Karte</th><th onclick="sortBy('cena')">Najjeftinije</th><th>Prodavac</th><th>Fiksne</th><th>Ušteda vs najskuplje</th><th>Akcija</th>
+</tr></thead><tbody></tbody></table>
+
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+<div class="modal">
+<button class="close" onclick="closeModal()">X</button>
+<h2 id="modalTitle"></h2>
+<div id="modalSub" style="color:#888;font-size:12px;margin-bottom:10px"></div>
+<table id="modalTbl"><thead><tr><th>Prodavac</th><th>Cena</th><th>Razlika</th><th>Napomena</th></tr></thead><tbody></tbody></table>
+</div>
+</div>
+
+<script>
+const raw=[{"naziv": "Egyptian God Deck: Slifer", "karte": 40, "cena": 1000, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "Egyptian God Deck: Obelisk", "karte": 40, "cena": 1000, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "Legend of the Crystal Beasts", "karte": 46, "cena": 1100, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "Realm of Light (2024 Reprint)", "karte": 41, "cena": 1100, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "Cyber Strike", "karte": 44, "cena": 1200, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "Blue-Eyes White Destiny", "karte": 50, "cena": 1300, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "The Crimson King", "karte": 46, "cena": 1350, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "Fire Kings", "karte": 48, "cena": 1450, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "Spirit Charmers", "karte": 51, "cena": 1600, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Chronicles", "note": ""}, {"naziv": "2021 Tin of Ancient Battles", "karte": 54, "cena": 1300, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Tin", "note": ""}, {"naziv": "Maximum Gold: El Dorado", "karte": 28, "cena": 1300, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Box", "note": ""}, {"naziv": "25th Tin Dueling Heroes", "karte": 45, "cena": 1500, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Tin", "note": ""}, {"naziv": "Legendary Kaiba 2025", "karte": 120, "cena": 2600, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Legendary", "note": ""}, {"naziv": "Legendary 5D's Decks", "karte": 129, "cena": 3100, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Legendary", "note": ""}, {"naziv": "Legendary Arc-V Decks", "karte": 129, "cena": 3150, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Legendary", "note": ""}, {"naziv": "Legendary Modern 2026", "karte": 120, "cena": 3550, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Legendary", "note": ""}, {"naziv": "Spirit Charmers (Yu-GO!)", "karte": 51, "cena": 1200, "prodavac": "Yu-GO! Cards", "fiksno": "DA", "tip": "Chronicles", "note": "Popust sa 2400"}, {"naziv": "Legendary Kaiba (Yu-GO!)", "karte": 120, "cena": 3000, "prodavac": "Yu-GO! Cards", "fiksno": "DA", "tip": "Legendary", "note": ""}, {"naziv": "Legendary Arc-V (Yu-GO!)", "karte": 129, "cena": 4000, "prodavac": "Yu-GO! Cards", "fiksno": "DA", "tip": "Legendary", "note": ""}, {"naziv": "Legendary Modern 2026 (Yu-GO!)", "karte": 120, "cena": 5000, "prodavac": "Yu-GO! Cards", "fiksno": "DA", "tip": "Legendary", "note": ""}, {"naziv": "Realm of Light Reprint", "karte": 41, "cena": 1300, "prodavac": "kraken.rs", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "Spirit Charmers (kraken)", "karte": 51, "cena": 2000, "prodavac": "kraken.rs", "fiksno": "DA", "tip": "Chronicles", "note": ""}, {"naziv": "2025 Mega-Pack Bundle (kraken)", "karte": 60, "cena": 2500, "prodavac": "kraken.rs", "fiksno": "NE", "tip": "Bundle", "note": ""}, {"naziv": "25th Tin Dueling Heroes (kraken)", "karte": 45, "cena": 2900, "prodavac": "kraken.rs", "fiksno": "NE", "tip": "Tin", "note": ""}, {"naziv": "Mega-Pack Tin 2025 (kraken)", "karte": 45, "cena": 2900, "prodavac": "kraken.rs", "fiksno": "NE", "tip": "Tin", "note": ""}, {"naziv": "Legendary Modern 2026 (kraken)", "karte": 120, "cena": 3500, "prodavac": "kraken.rs", "fiksno": "DA", "tip": "Legendary", "note": ""}, {"naziv": "Legendary Arc-V (kraken)", "karte": 129, "cena": 3600, "prodavac": "kraken.rs", "fiksno": "DA", "tip": "Legendary", "note": ""}, {"naziv": "Legendary Arc-V (games.rs)", "karte": 129, "cena": 3999, "prodavac": "games.rs", "fiksno": "DA", "tip": "Legendary", "note": ""}, {"naziv": "Legendary Modern 2026 (games.rs)", "karte": 120, "cena": 3999, "prodavac": "games.rs", "fiksno": "DA", "tip": "Legendary", "note": ""}, {"naziv": "Legendary 5D's (games.rs)", "karte": 129, "cena": 3999, "prodavac": "games.rs", "fiksno": "DA", "tip": "Legendary", "note": ""}, {"naziv": "Legendary Modern (crni zmaj)", "karte": 120, "cena": 4000, "prodavac": "crni-zmaj.rs", "fiksno": "DA", "tip": "Legendary", "note": ""}, {"naziv": "Spirit Charmers (crni zmaj)", "karte": 51, "cena": 2000, "prodavac": "crni-zmaj.rs", "fiksno": "DA", "tip": "Chronicles", "note": ""}, {"naziv": "Blue-Eyes White Destiny (crni zmaj)", "karte": 50, "cena": 1800, "prodavac": "crni-zmaj.rs", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "Realm of Light (crni zmaj)", "karte": 41, "cena": 1600, "prodavac": "crni-zmaj.rs", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "Fire Kings (crni zmaj)", "karte": 48, "cena": 1600, "prodavac": "crni-zmaj.rs", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "Slifer (crni zmaj)", "karte": 40, "cena": 1600, "prodavac": "crni-zmaj.rs", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "Obelisk (crni zmaj)", "karte": 40, "cena": 1600, "prodavac": "crni-zmaj.rs", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "Crimson King (crni zmaj)", "karte": 46, "cena": 1600, "prodavac": "crni-zmaj.rs", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "Crystal Beasts (crni zmaj)", "karte": 46, "cena": 2000, "prodavac": "crni-zmaj.rs", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "Cyber Strike (crni zmaj)", "karte": 44, "cena": 2000, "prodavac": "crni-zmaj.rs", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "Geargia Rampage", "karte": 42, "cena": 1200, "prodavac": "crni-zmaj.rs", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "Yuya & Declan Starter", "karte": 42, "cena": 1200, "prodavac": "crni-zmaj.rs", "fiksno": "DA", "tip": "Starter", "note": ""}, {"naziv": "Blue-Eyes (amfibija)", "karte": 50, "cena": 1600, "prodavac": "amfibija.rs", "fiksno": "DA", "tip": "Structure", "note": ""}, {"naziv": "Realm of Light reprint (gnom)", "karte": 41, "cena": 903, "prodavac": "gnom.rs", "fiksno": "DA", "tip": "Structure", "note": "-30% NAJJEFTINIJI"}, {"naziv": "Crimson King Jack Atlas (gnom)", "karte": 46, "cena": 1161, "prodavac": "gnom.rs", "fiksno": "DA", "tip": "Structure", "note": "-16%"}, {"naziv": "Dark World 1st ed (gnom)", "karte": 44, "cena": 1161, "prodavac": "gnom.rs", "fiksno": "DA", "tip": "Structure", "note": "-10%"}, {"naziv": "Obelisk (gnom)", "karte": 40, "cena": 1192, "prodavac": "gnom.rs", "fiksno": "DA", "tip": "Structure", "note": "-20%"}, {"naziv": "Slifer (gnom)", "karte": 40, "cena": 1192, "prodavac": "gnom.rs", "fiksno": "DA", "tip": "Structure", "note": "-20%"}, {"naziv": "Fire Kings reprint (gnom)", "karte": 48, "cena": 1251, "prodavac": "gnom.rs", "fiksno": "DA", "tip": "Structure", "note": "-10%"}, {"naziv": "Blue-Eyes EN (gnom)", "karte": 50, "cena": 1341, "prodavac": "gnom.rs", "fiksno": "DA", "tip": "Structure", "note": "-10%"}, {"naziv": "Crystal Beasts 1st ed (gnom)", "karte": 46, "cena": 1341, "prodavac": "gnom.rs", "fiksno": "DA", "tip": "Structure", "note": "-10%"}, {"naziv": "Albaz Strike (gnom)", "karte": 46, "cena": 1890, "prodavac": "gnom.rs", "fiksno": "DA", "tip": "Structure", "note": "-10%"}, {"naziv": "Spirit Charmers (gnom)", "karte": 51, "cena": 2061, "prodavac": "gnom.rs", "fiksno": "DA", "tip": "Chronicles", "note": ""}, {"naziv": "Dueling Heroes Tin (gnom)", "karte": 45, "cena": 2241, "prodavac": "gnom.rs", "fiksno": "NE", "tip": "Tin", "note": ""}, {"naziv": "Legendary Kaiba (gnom)", "karte": 120, "cena": 3141, "prodavac": "gnom.rs", "fiksno": "DA", "tip": "Legendary", "note": ""}, {"naziv": "Legendary Dragon Decks (gnom)", "karte": 153, "cena": 3192, "prodavac": "gnom.rs", "fiksno": "DA", "tip": "Legendary", "note": "-20%"}, {"naziv": "Star Pack ARC-V Booster", "karte": 3, "cena": 150, "prodavac": "games4you.rs", "fiksno": "NE", "tip": "Booster", "note": ""}, {"naziv": "Duels From The Deep Booster", "karte": 5, "cena": 250, "prodavac": "games4you.rs", "fiksno": "NE", "tip": "Booster", "note": ""}, {"naziv": "Soulburning Volcano Booster", "karte": 5, "cena": 300, "prodavac": "games4you.rs", "fiksno": "NE", "tip": "Booster", "note": ""}, {"naziv": "Justice Hunters Booster", "karte": 9, "cena": 600, "prodavac": "games4you.rs", "fiksno": "NE", "tip": "Booster", "note": ""}, {"naziv": "Maze of Muertos Booster", "karte": 9, "cena": 600, "prodavac": "games4you.rs", "fiksno": "NE", "tip": "Booster", "note": ""}, {"naziv": "Alliance Insight Booster", "karte": 9, "cena": 600, "prodavac": "games4you.rs", "fiksno": "NE", "tip": "Booster", "note": ""}, {"naziv": "Duelist Nexus Booster", "karte": 9, "cena": 600, "prodavac": "games4you.rs", "fiksno": "NE", "tip": "Booster", "note": ""}, {"naziv": "Rarity Collection 5 Booster", "karte": 5, "cena": 900, "prodavac": "games4you.rs", "fiksno": "NE", "tip": "Booster", "note": ""}, {"naziv": "2025 Mega-Pack Bundle", "karte": 60, "cena": 2600, "prodavac": "games4you.rs", "fiksno": "NE", "tip": "Bundle", "note": ""}, {"naziv": "Alliance Insight Tuckbox", "karte": 27, "cena": 1759, "prodavac": "delfi.rs", "fiksno": "NE", "tip": "Tuckbox", "note": "3 packa"}, {"naziv": "Phantom Revenge Tuckbox", "karte": 27, "cena": 1759, "prodavac": "delfi.rs", "fiksno": "NE", "tip": "Tuckbox", "note": ""}, {"naziv": "Mega-Pack Tin 2025 (computerland)", "karte": 45, "cena": 2999, "prodavac": "computerland.rs", "fiksno": "NE", "tip": "Tin", "note": ""}, {"naziv": "Legendary Arc-V Decks", "karte": 129, "cena": 2900, "prodavac": "Plixter-KupujemProdajem", "fiksno": "DA", "tip": "Legendary", "note": "KupujemProdajem"}, {"naziv": "Ghosts From the Past Box", "karte": 15, "cena": 4000, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Booster Box", "note": "Dodato"}, {"naziv": "Crimson King Nemacki", "karte": 46, "cena": 990, "prodavac": "ananas.rs", "fiksno": "DA", "tip": "Structure", "note": "NAJJEFTINIJI CRIMSON"}, {"naziv": "2 Player Starter Set (ananas)", "karte": 88, "cena": 2490, "prodavac": "ananas.rs", "fiksno": "DA", "tip": "Starter", "note": ""}, {"naziv": "Legendary 5Ds (ananas)", "karte": 129, "cena": 3799, "prodavac": "ananas.rs", "fiksno": "DA", "tip": "Legendary", "note": ""}, {"naziv": "Speed Duel: Attack from the Deep Booster Pack", "karte": 4, "cena": 300, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Booster", "note": "Speed Duel 32 kom"}, {"naziv": "Speed Duel: Scars of Battle Booster Pack", "karte": 4, "cena": 300, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Booster", "note": "Speed Duel 32 kom"}, {"naziv": "OTS Tournament Pack 22 Booster", "karte": 3, "cena": 350, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Booster", "note": "OTS 20 kom"}, {"naziv": "OTS Tournament Pack 20 Booster", "karte": 3, "cena": 400, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Booster", "note": "OTS 10 kom"}, {"naziv": "OTS Tournament Pack 21 Booster", "karte": 3, "cena": 400, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Booster", "note": "OTS 10 kom"}, {"naziv": "OTS Tournament Pack 25 Booster", "karte": 3, "cena": 400, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Booster", "note": "OTS 10 kom"}, {"naziv": "OTS Tournament Pack 26 Booster", "karte": 3, "cena": 400, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Booster", "note": "OTS 10 kom"}, {"naziv": "Speed Duel: Trials of the Kingdom Booster Pack", "karte": 4, "cena": 400, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Booster", "note": "Speed Duel 31 kom"}, {"naziv": "Structure Deck: Realm of Light (2024 Reprint)", "karte": 41, "cena": 1000, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Structure", "note": "NOVO 1.000"}, {"naziv": "Structure Deck: Legend of the Crystal Beasts", "karte": 46, "cena": 1150, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Structure", "note": "NOVO 1.150"}, {"naziv": "Structure Deck: The Crimson King", "karte": 46, "cena": 1250, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Structure", "note": "NOVO 1.250"}, {"naziv": "Structure Deck: Fire Kings", "karte": 48, "cena": 1350, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Structure", "note": "NOVO 1.350"}, {"naziv": "Legendary 5D's Deck: Crow Deck", "karte": 43, "cena": 1500, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Structure", "note": "Pojedinačni deck"}, {"naziv": "Legendary 5D's Deck: Yusei Deck", "karte": 43, "cena": 1500, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Structure", "note": "Pojedinačni deck"}, {"naziv": "THE CHRONICLES DECK: Spirit Charmers", "karte": 51, "cena": 1500, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Chronicles", "note": "NOVO 1.500"}, {"naziv": "25th Anniversary Rarity Collection II: 2-Pack Tuckbox", "karte": 6, "cena": 1700, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Tuckbox", "note": "2-Pack"}, {"naziv": "Alliance Insight: 3-Pack Tuckbox", "karte": 27, "cena": 1700, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Tuckbox", "note": "NOVO 1.700"}, {"naziv": "2025 Mega-Pack Bundle", "karte": 60, "cena": 2050, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Bundle", "note": "NOVO 2.050 najjeftiniji"}, {"naziv": "Legendary 5D's Decks", "karte": 129, "cena": 2900, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Legendary", "note": "NOVO 2.900"}, {"naziv": "Legendary Arc-V Decks", "karte": 129, "cena": 2950, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Legendary", "note": "NOVO 2.950"}, {"naziv": "Legendary Modern Decks 2026", "karte": 120, "cena": 3500, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Legendary", "note": "NOVO 3.500"}, {"naziv": "Ancient Guardians Booster Box", "karte": 168, "cena": 3900, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Booster Box", "note": "NOVO 3.900"}, {"naziv": "Legendary Dragon Decks Box Set", "karte": 153, "cena": 4050, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Legendary", "note": "NOVO 4.050"}, {"naziv": "THE CHRONICLES DECK: The Fallen & The Virtuous", "karte": 50, "cena": 4100, "prodavac": "heaventcg.shop", "fiksno": "DA", "tip": "Chronicles", "note": "NOVO 4.100"}, {"naziv": "Ghosts From the Past Box", "karte": 15, "cena": 4200, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Booster Box", "note": "NOVO 4.200"}, {"naziv": "Alliance Insight Booster Box", "karte": 168, "cena": 5400, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Booster Box", "note": "NOVO 5.400"}, {"naziv": "Phantom Revenge Booster Box", "karte": 168, "cena": 6700, "prodavac": "heaventcg.shop", "fiksno": "NE", "tip": "Booster Box", "note": "NOVO 6.700"}, {"naziv": "Duelist Nexus Booster", "karte": 9, "cena": 590, "prodavac": "gnom.rs", "fiksno": "NE", "tip": "Booster", "note": "gnom 590 novo"}, {"naziv": "Battles of Legend Chapter 1", "karte": 90, "cena": 1790, "prodavac": "gnom.rs", "fiksno": "DA", "tip": "Legendary", "note": "gnom 1790 novo"}, {"naziv": "Beware of Traptrix Structure Deck", "karte": 48, "cena": 2390, "prodavac": "gnom.rs", "fiksno": "DA", "tip": "Structure", "note": "gnom 2390 novo"}, {"naziv": "25th Anniversary Tin: Dueling Mirrors", "karte": 54, "cena": 2490, "prodavac": "gnom.rs", "fiksno": "NE", "tip": "Tin", "note": "gnom 2490 novo"}, {"naziv": "2022 Tin of the Pharaoh's Gods", "karte": 45, "cena": 2990, "prodavac": "gnom.rs", "fiksno": "NE", "tip": "Tin", "note": "gnom 2990 novo"}, {"naziv": "Mega Pack Tin 2025", "karte": 50, "cena": 3190, "prodavac": "gnom.rs", "fiksno": "NE", "tip": "Tin", "note": "gnom 3190 novo"}, {"naziv": "Speed Duel GX", "karte": 120, "cena": 3990, "prodavac": "gnom.rs", "fiksno": "DA", "tip": "Speed Duel", "note": "gnom 3990 novo"}, {"naziv": "Shaddoll Showdown Structure Deck", "karte": 42, "cena": 4890, "prodavac": "gnom.rs", "fiksno": "DA", "tip": "Structure", "note": "gnom 4890 novo"}, {"naziv": "Soulburning Volcano Booster Display", "karte": 168, "cena": 8090, "prodavac": "gnom.rs", "fiksno": "NE", "tip": "Booster Box", "note": "Display 24 packa novo"}, {"naziv": "Dimension Force Booster Display", "karte": 168, "cena": 10990, "prodavac": "gnom.rs", "fiksno": "NE", "tip": "Booster Box", "note": "Display 24 packa novo"}, {"naziv": "Duelist Nexus Booster Box", "karte": 168, "cena": 10990, "prodavac": "gnom.rs", "fiksno": "NE", "tip": "Booster Box", "note": "Box 24 packa novo"}, {"naziv": "Wild Survivors Booster Box", "karte": 168, "cena": 10990, "prodavac": "gnom.rs", "fiksno": "NE", "tip": "Booster Box", "note": "Special Box 24 packa novo"}, {"naziv": "Crystal Beasts Structure Deck", "karte": 46, "cena": 1000, "prodavac": "KupujemProdajem-Beograd", "fiksno": "DA", "tip": "Structure", "note": "KP 135 pregleda - 1000 din"}, {"naziv": "Structure Deck: Dark World", "karte": 44, "cena": 1100, "prodavac": "KupujemProdajem-Beograd", "fiksno": "DA", "tip": "Structure", "note": "KP Novi Bg 35 pregleda"}, {"naziv": "Structure Deck: Legend of the Crystal Beasts", "karte": 46, "cena": 1100, "prodavac": "KupujemProdajem-Beograd", "fiksno": "DA", "tip": "Structure", "note": "KP Novi Bg 15 pregleda"}, {"naziv": "Blue-Eyes Destiny Structure Deck", "karte": 50, "cena": 1200, "prodavac": "KupujemProdajem-Beograd", "fiksno": "DA", "tip": "Structure", "note": "KP 241 pregleda"}, {"naziv": "Structure Deck: Cyber Strike", "karte": 44, "cena": 1200, "prodavac": "KupujemProdajem-Beograd", "fiksno": "DA", "tip": "Structure", "note": "KP Novi Bg 35 pregleda"}, {"naziv": "Dark World Structure Deck", "karte": 44, "cena": 1200, "prodavac": "KupujemProdajem-Beograd", "fiksno": "DA", "tip": "Structure", "note": "KP 150 pregleda"}, {"naziv": "Cyber Strike Structure Deck", "karte": 44, "cena": 1200, "prodavac": "KupujemProdajem-Beograd", "fiksno": "DA", "tip": "Structure", "note": "KP duplikat 1200"}, {"naziv": "2021 Tin of Ancient Battles", "karte": 54, "cena": 1300, "prodavac": "KupujemProdajem-Beograd", "fiksno": "NE", "tip": "Tin", "note": "KP Novi Bg"}, {"naziv": "25th Anniversary Tin: Dueling Heroes", "karte": 45, "cena": 1500, "prodavac": "KupujemProdajem-Beograd", "fiksno": "NE", "tip": "Tin", "note": "KP Novi Bg 43 pregleda"}, {"naziv": "Mechanized Madness Structure Deck", "karte": 44, "cena": 1600, "prodavac": "KupujemProdajem-Beograd", "fiksno": "DA", "tip": "Structure", "note": "KP 62 pregleda"}, {"naziv": "Fire Kings Structure Deck", "karte": 48, "cena": 1600, "prodavac": "KupujemProdajem-Beograd", "fiksno": "DA", "tip": "Structure", "note": "KP 360 pregleda"}, {"naziv": "Starter Deck Yuya & Declan", "karte": 42, "cena": 1600, "prodavac": "KupujemProdajem-Beograd", "fiksno": "DA", "tip": "Starter", "note": "KP"}, {"naziv": "Geargia Rampage", "karte": 42, "cena": 2000, "prodavac": "KupujemProdajem-Beograd", "fiksno": "DA", "tip": "Structure", "note": "KP"}, {"naziv": "Rise of the True Dragons", "karte": 41, "cena": 2200, "prodavac": "KupujemProdajem-Beograd", "fiksno": "DA", "tip": "Structure", "note": "KP 276 pregleda"}, {"naziv": "Master of Pendulum", "karte": 43, "cena": 2500, "prodavac": "KupujemProdajem-Beograd", "fiksno": "DA", "tip": "Structure", "note": "KP 161 pregleda"}, {"naziv": "Emperor of Darkness Structure Deck", "karte": 41, "cena": 2500, "prodavac": "KupujemProdajem-Beograd", "fiksno": "DA", "tip": "Structure", "note": "KP 538 pregleda"}, {"naziv": "2-Player Starter Set", "karte": 88, "cena": 2800, "prodavac": "KupujemProdajem-Beograd", "fiksno": "DA", "tip": "Starter", "note": "KP 412 pregleda"}, {"naziv": "Legendary 5D's Decks", "karte": 129, "cena": 3100, "prodavac": "KupujemProdajem-Beograd", "fiksno": "DA", "tip": "Legendary", "note": "KP Novi Bg 42 pregleda"}, {"naziv": "Legendary 5Ds Decks", "karte": 129, "cena": 3200, "prodavac": "KupujemProdajem-Beograd", "fiksno": "DA", "tip": "Legendary", "note": "KP 346 pregleda"}, {"naziv": "Pendulum Domination Structure Deck", "karte": 41, "cena": 3300, "prodavac": "KupujemProdajem-Loznica", "fiksno": "DA", "tip": "Structure", "note": "KP Loznica 3300 - jeftinije od 3600"}];
+
+function norm(n){
+ n=n.toLowerCase();
+ if(n.includes('crystal')) return 'crystal beasts';
+ if(n.includes('realm')) return 'realm of light';
+ if(n.includes('crimson')) return 'crimson king';
+ if(n.includes('blue-eyes')||n.includes('blue eyes')||n.includes('blueeyes')) return 'blue eyes white destiny';
+ if(n.includes('slifer')) return 'slifer the sky dragon';
+ if(n.includes('obelisk')) return 'obelisk the tormentor';
+ if(n.includes('fire king')) return 'fire kings';
+ if(n.includes('cyber strike')) return 'cyber strike';
+ if(n.includes('spirit charm')) return 'spirit charmers';
+ if(n.includes('kaiba')) return 'legendary kaiba';
+ if(n.includes('arc-v')||n.includes('arc v')) return 'legendary arc v';
+ if(n.includes('modern')&&n.includes('2026')) return 'legendary modern 2026';
+ if(n.includes('5d')) return 'legendary 5ds';
+ if(n.includes('dragon deck')) return 'legendary dragon decks';
+ if(n.includes('ancient battle')) return 'tin ancient battles';
+ if(n.includes('dueling hero')) return 'tin dueling heroes';
+ if(n.includes('dueling mirror')) return 'tin dueling mirrors';
+ if(n.includes('pharaoh')) return 'tin pharaoh gods';
+ if(n.includes('mega bundle')||n.includes('mega-pack bundle')) return 'mega pack bundle';
+ if(n.includes('mega tin')||n.includes('mega-pack tin')||n.includes('mega pack tin')) return 'mega pack tin';
+ if(n.includes('eldorado')||n.includes('el dorado')) return 'maximum gold el dorado';
+ if(n.includes('ghost')) return 'ghosts from past';
+ if(n.includes('geargia')) return 'geargia rampage';
+ if(n.includes('yuya & declan')||n.includes('yuya and declan')||n.includes('yuya &') ) return 'yuya & declan';
+ if(n.includes('starter')&&n.includes('yuya')) return 'starter yuya';
+ if(n.includes('dark world')) return 'dark world';
+ if(n.includes('albaz')) return 'albaz strike';
+ if(n.includes('star pack')) return 'star pack arc v';
+ if(n.includes('duels from')) return 'duels from deep';
+ if(n.includes('soulburning')&&n.includes('volcano')&&n.includes('display')) return 'soulburning volcano display';
+ if(n.includes('soulburning')) return 'soulburning volcano';
+ if(n.includes('alliance')&&n.includes('tuck')) return 'alliance tuckbox';
+ if(n.includes('alliance')&&n.includes('insight')&&n.includes('box')) return 'alliance insight box';
+ if(n.includes('2 player')||n.includes('2-player')) return '2 player starter';
+ if(n.includes('traptrix')) return 'beware traptrix';
+ if(n.includes('battles of legend')) return 'battles of legend';
+ if(n.includes('duelist nexus')&&n.includes('box')) return 'duelist nexus box';
+ if(n.includes('duelist nexus')) return 'duelist nexus booster';
+ if(n.includes('dimension force')&&n.includes('display')) return 'dimension force display';
+ if(n.includes('wild survivor')) return 'wild survivors box';
+ if(n.includes('speed duel')&&n.includes('gx')) return 'speed duel gx';
+ if(n.includes('shaddoll')) return 'shaddoll showdown';
+ if(n.includes('pendulum domination')) return 'pendulum domination';
+ if(n.includes('emperor of darkness')) return 'emperor of darkness';
+ if(n.includes('master of pendulum')) return 'master pendulum';
+ if(n.includes('rise of the true')) return 'rise true dragons';
+ if(n.includes('mechanized madness')) return 'mechanized madness';
+ if(n.includes('saga of blue-eyes')) return 'saga blue eyes';
+ if(n.includes('crow deck')) return 'legendary 5ds crow';
+ if(n.includes('yusei deck')) return 'legendary 5ds yusei';
+ if(n.includes('rarity collection ii')) return 'rarity collection ii tuckbox';
+ if(n.includes('fallen')&&n.includes('virtuous')) return 'fallen virtuous';
+ if(n.includes('phantom revenge')&&n.includes('tuck')) return 'phantom revenge tuckbox';
+ if(n.includes('phantom revenge')&&n.includes('box')) return 'phantom revenge box';
+ if(n.includes('ancient guardian')&&n.includes('box')) return 'ancient guardians box';
+ if(n.includes('ots tournament pack 22')) return 'ots 22';
+ if(n.includes('ots tournament pack 20')) return 'ots 20';
+ if(n.includes('ots tournament pack 21')) return 'ots 21';
+ if(n.includes('ots tournament pack 25')) return 'ots 25';
+ if(n.includes('ots tournament pack 26')) return 'ots 26';
+ if(n.includes('attack from the deep')) return 'speed duel attack deep';
+ if(n.includes('scars of battle')) return 'speed duel scars battle';
+ if(n.includes('trials of the kingdom')) return 'speed duel trials kingdom';
+ return n.trim();
+}
+
+const groups={};
+raw.forEach(r=>{
+ let k=norm(r.naziv);
+ if(!groups[k]) groups[k]={key:k, items:[], display:r.naziv};
+ groups[k].items.push(r);
+ if(r.naziv.length < groups[k].display.length) groups[k].display=r.naziv;
+});
+
+let grouped=Object.values(groups).map(g=>{
+ g.items.sort((a,b)=>a.cena-b.cena);
+ let cheapest=g.items[0];
+ let expensive=g.items[g.items.length-1];
+ g.cheapest=cheapest;
+ g.expensive=expensive;
+ g.saving=expensive.cena-cheapest.cena;
+ return g;
+});
+
+let sortKey='cena', dir=1;
+function render(){
+ let q=document.getElementById('search').value.toLowerCase();
+ let tip=document.getElementById('tip').value;
+ let f=document.getElementById('fiksno').value;
+ let filtered=grouped.filter(g=>{
+   let c=g.cheapest;
+   if(q && !g.display.toLowerCase().includes(q) && !g.key.includes(q)) return false;
+   if(tip && c.tip!==tip) return false;
+   if(f && c.fiksno!==f) return false;
+   return true;
+ });
+ filtered.sort((a,b)=>{
+   let av=a.cheapest[sortKey], bv=b.cheapest[sortKey];
+   if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
+   return av>bv?dir:-dir;
+ });
+ let tbody=document.querySelector('#tbl tbody');tbody.innerHTML='';
+ filtered.forEach(g=>{
+   let c=g.cheapest;
+   let tr=document.createElement('tr');
+   tr.innerHTML=`<td><b>${g.display}</b> <span style="color:#555;font-size:11px">(${g.items.length} ponuda)</span></td>
+   <td>${c.tip}</td><td>${c.karte}</td>
+   <td class="green">${c.cena.toLocaleString('sr-RS')} RSD</td>
+   <td><span class="gold">${c.prodavac}</span></td>
+   <td><span class="badge badge-${c.fiksno}">${c.fiksno}</span></td>
+   <td>${g.saving>0?`-${g.saving} RSD vs ${g.expensive.prodavac}`:'najbolja cena'}</td>
+   <td><button class="btn-ghost" onclick="openCompare('${g.key.replace(/'/g,"\'")}')">Uporedi (${g.items.length})</button></td>`;
+   tbody.appendChild(tr);
+ });
+ document.getElementById('summary').innerHTML=`<span class="card">Unique proizvoda <b>${grouped.length}</b></span><span class="card">Ukupno ponuda <b>${raw.length}</b> iz 12+ radnji</span><span class="card">Prikazano <b>${filtered.length}</b></span>`;
+}
+
+function openCompare(key){
+ let g=groups[key];
+ if(!g) return;
+ document.getElementById('modalTitle').textContent=g.display;
+ document.getElementById('modalSub').textContent=`${g.items.length} ponuda • Fiksne: ${g.cheapest.fiksno} • ${g.cheapest.karte} karata`;
+ let tbody=document.querySelector('#modalTbl tbody');tbody.innerHTML='';
+ g.items.forEach((it,i)=>{
+   let diff=it.cena-g.cheapest.cena;
+   let tr=document.createElement('tr'); if(i===0) tr.className='cheap-row';
+   tr.innerHTML=`<td>${it.prodavac}${i===0?' ⭐ NAJJEFTINIJE':''}</td><td class="${i===0?'green':''}">${it.cena} RSD</td><td>${diff===0?'—':`+${diff} RSD`}</td><td>${it.note||''}</td>`;
+   tbody.appendChild(tr);
+ });
+ document.getElementById('modalBg').style.display='flex';
+}
+function closeModal(){document.getElementById('modalBg').style.display='none';}
+function sortBy(k){if(sortKey===k)dir*=-1;else{sortKey=k;dir=1;}render();}
+function exportCSV(){
+ let rows=[['Naziv','Tip','Karte','Najjeftinije Cena','Prodavac','Fiksne','Usteda','Broj ponuda']];
+ grouped.forEach(g=>{
+   rows.push([g.display,g.cheapest.tip,g.cheapest.karte,g.cheapest.cena,g.cheapest.prodavac,g.cheapest.fiksno,g.saving,g.items.length]);
+ });
+ let csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+ let blob=new Blob([csv],{type:'text/csv'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='yugioh-najjeftinije.csv';a.click();
+}
+let tips=[...new Set(raw.map(r=>r.tip))].sort();let sel=document.getElementById('tip');tips.forEach(t=>{let o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o);});
+document.getElementById('search').addEventListener('input',render);
+document.getElementById('tip').addEventListener('change',render);
+document.getElementById('fiksno').addEventListener('change',render);
+render();
+</script>
+</body>
+</html>
